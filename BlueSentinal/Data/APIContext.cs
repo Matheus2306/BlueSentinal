@@ -9,5 +9,16 @@ namespace BlueSentinal.Data
         public APIContext(DbContextOptions<APIContext> options) : base(options)
         { }
 
+        public DbSet<DroneFabri> DroneFabris { get; set; }
+        public DbSet<Drone> Drones { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+            // Tabelas
+            builder.Entity<DroneFabri>().ToTable("Drone Fabrica");
+            builder.Entity<Drone>().ToTable("Drones Usuários");
+        }
+
     }
 }
