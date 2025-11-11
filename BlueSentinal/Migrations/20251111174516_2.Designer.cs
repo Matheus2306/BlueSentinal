@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BlueSentinal.Migrations
 {
     [DbContext(typeof(APIContext))]
-    [Migration("20251111171620_init")]
-    partial class init
+    [Migration("20251111174516_2")]
+    partial class _2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -105,11 +105,9 @@ namespace BlueSentinal.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Nascimento")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Nome")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
