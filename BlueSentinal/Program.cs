@@ -12,27 +12,29 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<APIContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+//builder.Services.AddDefaultIdentity<Usuario>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<APIContext>();
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
-// Adicionar o serviço de autenticação
-// Serviço de EndPoints do Identity Framework
+// Adicionar o serviï¿½o de autenticaï¿½ï¿½o
+// Serviï¿½o de EndPoints do Identity Framework
 builder.Services.AddIdentityApiEndpoints<Usuario>(options =>
 {
-    options.SignIn.RequireConfirmedEmail = false; // Exige confirmação de email
-    options.SignIn.RequireConfirmedAccount = false; // Exige confirmação de conta
-    options.User.RequireUniqueEmail = true; // Exige email único
-    options.Password.RequireNonAlphanumeric = false; // Exige caracteres não alfanuméricos
-    options.Password.RequireLowercase = false; // Exige letras minúsculas
-    options.Password.RequireUppercase = false; // Exige letras maiúsculas
-    options.Password.RequireDigit = false; // Exige dígitos numéricos
-    options.Password.RequiredLength = 4; // Exige comprimento mínimo da senha
+    options.SignIn.RequireConfirmedEmail = false; // Exige confirmaï¿½ï¿½o de email
+    options.SignIn.RequireConfirmedAccount = false; // Exige confirmaï¿½ï¿½o de conta
+    options.User.RequireUniqueEmail = true; // Exige email ï¿½nico
+    options.Password.RequireNonAlphanumeric = false; // Exige caracteres nï¿½o alfanumï¿½ricos
+    options.Password.RequireLowercase = false; // Exige letras minï¿½sculas
+    options.Password.RequireUppercase = false; // Exige letras maiï¿½sculas
+    options.Password.RequireDigit = false; // Exige dï¿½gitos numï¿½ricos
+    options.Password.RequiredLength = 4; // Exige comprimento mï¿½nimo da senha
 })
 
-.AddRoles<IdentityRole>() // Adicionando o serviço de roles
-.AddEntityFrameworkStores<APIContext>() // Adicionando o serviço de EntityFramework
-.AddDefaultTokenProviders(); // Adiocionando o provedor de tokens padrão
+.AddRoles<IdentityRole>() // Adicionando o serviï¿½o de roles
+.AddEntityFrameworkStores<APIContext>() // Adicionando o serviï¿½o de EntityFramework
+.AddDefaultTokenProviders(); // Adiocionando o provedor de tokens padrï¿½o
 
 builder.Services.AddSwaggerGen(c =>
 {
@@ -61,7 +63,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Adicionar o serviço de CORS
+// Adicionar o serviï¿½o de CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", builder =>
@@ -71,7 +73,7 @@ builder.Services.AddCors(options =>
 });
 
 
-// Adicionar os Serviços de Autenticação e Autorização
+// Adicionar os Serviï¿½os de Autenticaï¿½ï¿½o e Autorizaï¿½ï¿½o
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 
@@ -82,16 +84,16 @@ app.UseSwagger(); // Habilita o Swagger
 
 app.UseSwaggerUI(); // Habilita a interface do Swagger
 
-app.UseHttpsRedirection(); // Redireciona requisições HTTP para HTTPS
+app.UseHttpsRedirection(); // Redireciona requisiï¿½ï¿½es HTTP para HTTPS
 
 app.UseCors("AllowAll"); // Habilita o CORS
 
-app.UseAuthentication(); // Habilita a autenticação
+app.UseAuthentication(); // Habilita a autenticaï¿½ï¿½o
 
-app.UseAuthorization(); // Habilita a autorização
+app.UseAuthorization(); // Habilita a autorizaï¿½ï¿½o
 
 app.MapControllers(); // Mapeia os controladores
 
-app.MapGroup("/Usuario").MapIdentityApi<Usuario>(); // Mapeia o grupo de endpoints de autenticação
+app.MapGroup("/Usuario").MapIdentityApi<Usuario>(); // Mapeia o grupo de endpoints de autenticaï¿½ï¿½o
 
 app.Run(); // Executa o aplicativo

@@ -25,7 +25,31 @@ namespace BlueSentinal.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Drone>>> GetDrones()
         {
-            return await _context.Drones.ToListAsync();
+            return await _context.Drones
+                .Include(d => d.DroneFabri)
+                .Include(d => d.Usuario)
+                .ToListAsync();
+        }
+
+        // GET: api/Drones/getDroneUser
+        [HttpGet("getDroneUser")]
+        public async Task<ActionResult<IEnumerable<Drone>>> GetUserDrone()
+        {
+            // Coleta o id do usuário logado pelo bearer
+            var userBearer = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userBearer))
+                return BadRequest("Usuário sem login");
+
+            var userId = new Guid(userBearer);
+
+            // Busca todos os drones do usuário logado, incluindo dados relacionados
+            var drones = await _context.Drones
+                .Where(d => d.UsuarioId == userId)
+                .Include(d => d.DroneFabri)
+                .Include(d => d.Usuario)
+                .ToListAsync();
+
+            return Ok(drones);
         }
 
         // GET: api/Drones/5
@@ -75,14 +99,6 @@ namespace BlueSentinal.Controllers
 
         // POST: api/Drones
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Drone>> PostDrone(Drone drone)
-        {
-            _context.Drones.Add(drone);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetDrone", new { id = drone.DroneId }, drone);
-        }
 
         // DELETE: api/Drones/5
         [HttpDelete("{id}")]
@@ -103,6 +119,40 @@ namespace BlueSentinal.Controllers
         private bool DroneExists(Guid id)
         {
             return _context.Drones.Any(e => e.DroneId == id);
+        }
+        // POST: api/Drones/vincular
+        [HttpPost("vincular")]
+        public async Task<IActionResult> VincularDrone(string mac, Drone drone)
+        {
+            var droneFabri = await _context.DroneFabris.FirstOrDefaultAsync(df => df.Mac == mac);
+            // Busca o DroneFabri pelo MAC
+            if (droneFabri == null)
+                return NotFound("DroneFabri não encontrado");
+
+            //coleta o token do usuário logado
+            var userBearer = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userBearer))
+                return BadRequest("Usuário sem login");
+
+            //verifica se o drone já está vinculado ao usuário
+            var existingDrone = await _context.Drones
+                .FirstOrDefaultAsync(d => d.DroneFabriId == droneFabri.DroneFabriId && d.UsuarioId == drone.UsuarioId);
+            if (existingDrone != null)
+                return BadRequest("Este drone já está vinculado ao usuário.");
+
+            drone.DroneFabri = droneFabri;
+
+            //adiciona o ID do usuario logado ao drone
+            drone.UsuarioId = new Guid(userBearer);
+
+            //adiciona o usuário ao drone pelo Id do bearer
+            drone.Usuario = await _context.Users.FindAsync(userBearer);
+
+
+            _context.Drones.Add(drone);
+            await _context.SaveChangesAsync();
+
+            return Ok(drone);
         }
     }
 }
