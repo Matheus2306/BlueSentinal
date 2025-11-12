@@ -10,9 +10,6 @@ namespace BlueSentinal.Models
         [Required(ErrorMessage = "MAC é obrigatório")]
         public string? Mac { get; set; }
         [Required(ErrorMessage = "Status é obrigatório")]
-        public bool? Status { get; set; }
-        [Required(ErrorMessage = "Localização é obrigatória")]
-        public string Localizacao { get; set; }
-        public int TempoAtividade { get; set; }
+        public bool? Status { get; set; } = false;
     }
 }

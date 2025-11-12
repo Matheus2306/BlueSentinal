@@ -78,6 +78,7 @@ namespace BlueSentinal.Controllers
         [HttpPost]
         public async Task<ActionResult<DroneFabri>> PostDroneFabri(DroneFabri droneFabri)
         {
+
             _context.DroneFabris.Add(droneFabri);
             await _context.SaveChangesAsync();
 
