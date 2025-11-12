@@ -18,6 +18,7 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
+
 // Adicionar o servi�o de autentica��o
 // Servi�o de EndPoints do Identity Framework
 builder.Services.AddIdentityApiEndpoints<Usuario>(options =>
@@ -80,6 +81,22 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// Criação de roles no banco
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    string[] roles = { "Admin", "User" };
+
+    foreach (var role in roles)
+    {
+        if (!await roleManager.RoleExistsAsync(role))
+        {
+            await roleManager.CreateAsync(new IdentityRole(role));
+        }
+    }
+}
+
+
 app.UseSwagger(); // Habilita o Swagger
 
 app.UseSwaggerUI(); // Habilita a interface do Swagger
@@ -97,3 +114,4 @@ app.MapControllers(); // Mapeia os controladores
 app.MapGroup("/Usuario").MapIdentityApi<Usuario>(); // Mapeia o grupo de endpoints de autentica��o
 
 app.Run(); // Executa o aplicativo
+

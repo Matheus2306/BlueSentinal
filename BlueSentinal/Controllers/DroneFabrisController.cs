@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BlueSentinal.Data;
 using BlueSentinal.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BlueSentinal.Controllers
 {
+    [Authorize(Roles = "Admin")]
     [Route("api/[controller]")]
     [ApiController]
     public class DroneFabrisController : ControllerBase

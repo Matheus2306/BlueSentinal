@@ -58,5 +58,38 @@ namespace BlueSentinal.Controllers
             await _context.SaveChangesAsync();
             return NoContent();
         }
+
+        [HttpPost("adicionarRole")]
+        public async Task<IActionResult> AdicionarRoleAoUsuario(string userId, string role)
+        {
+            var roleManager = HttpContext.RequestServices.GetService<RoleManager<IdentityRole>>();
+            if (roleManager == null)
+                return StatusCode(500, "RoleManager não disponível.");
+
+            if (!await roleManager.RoleExistsAsync(role))
+            {
+                var resultRole = await roleManager.CreateAsync(new IdentityRole(role));
+                if (!resultRole.Succeeded)
+                    return BadRequest("Erro ao criar a role.");
+            }
+
+            var usuario = await _userManager.FindByIdAsync(userId);
+            if (usuario == null)
+                return NotFound("Usuário não encontrado.");
+
+            // Verifica se o usuário já está na role
+            if (await _userManager.IsInRoleAsync(usuario, role))
+                return BadRequest($"Usuário já está na role '{role}'.");
+
+            var result = await _userManager.AddToRoleAsync(usuario, role);
+            if (!result.Succeeded)
+            {
+                var erros = string.Join(", ", result.Errors.Select(e => e.Description));
+                return BadRequest($"Erro ao adicionar a role ao usuário: {erros}");
+            }
+
+            return Ok($"Role '{role}' adicionada ao usuário '{usuario.UserName}'.");
+        }
+
     }
 }

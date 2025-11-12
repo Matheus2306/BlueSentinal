@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BlueSentinal.Data;
 using BlueSentinal.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BlueSentinal.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class DronesController : ControllerBase
@@ -22,6 +24,7 @@ namespace BlueSentinal.Controllers
         }
 
         // GET: api/Drones
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Drone>>> GetDrones()
         {
@@ -55,19 +58,7 @@ namespace BlueSentinal.Controllers
             return Ok(drones);
         }
 
-        // GET: api/Drones/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Drone>> GetDrone(Guid id)
-        {
-            var drone = await _context.Drones.FindAsync(id);
 
-            if (drone == null)
-            {
-                return NotFound();
-            }
-
-            return drone;
-        }
 
         // PUT: api/Drones/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
@@ -85,6 +76,9 @@ namespace BlueSentinal.Controllers
             {
                 return NotFound();
             }
+            var dronefabri = await _context.DroneFabris.FindAsync(drone.DroneFabriId);
+            dronefabri.Status = false;
+
 
             _context.Drones.Remove(drone);
             await _context.SaveChangesAsync();
@@ -138,14 +132,39 @@ namespace BlueSentinal.Controllers
             var drone = await _context.Drones.FindAsync(id);
             if (drone == null)
                 return NotFound("Drone não encontrado.");
+            drone.TempoEmMili = tempo;
 
             // Calcula o tempo em horas e formata com 2 casas decimais
             drone.tempoEmHoras = Math.Round((decimal)(tempo / 1000.0 / 60 / 60), 2);
 
-            _context.Entry(drone).Property(d => d.tempoEmHoras).IsModified = true;
+            _context.Entry(drone).Property(d => d.tempoEmHoras + d.TempoEmMili).IsModified = true;
             await _context.SaveChangesAsync();
 
             return Ok(drone);
+        }
+
+        [Authorize(Roles = "Admin")]
+        // GET: api/Drones/getByUserName/{userName}
+        [HttpGet("getByUserName/{userName}")]
+        public async Task<ActionResult<IEnumerable<Drone>>> GetDronesByUserName(string userName)
+        {
+            // Verifica se o nome do usuário foi fornecido
+            if (string.IsNullOrEmpty(userName))
+                return BadRequest("Nome do usuário não fornecido.");
+
+            // Busca o usuário pelo nome
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == userName);
+            if (user == null)
+                return NotFound("Usuário não encontrado.");
+
+            // Busca os drones associados ao usuário
+            var drones = await _context.Drones
+                .Where(d => d.UsuarioId == new Guid(user.Id))
+                .Include(d => d.DroneFabri)
+                .Include(d => d.Usuario)
+                .ToListAsync();
+
+            return Ok(drones);
         }
     }
 }
