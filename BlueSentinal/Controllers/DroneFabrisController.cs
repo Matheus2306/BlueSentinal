@@ -78,6 +78,12 @@ namespace BlueSentinal.Controllers
         [HttpPost]
         public async Task<ActionResult<DroneFabri>> PostDroneFabri(DroneFabri droneFabri)
         {
+            //verifica se o MAC escrito já existe
+            var existingDrone = await _context.DroneFabris.FirstOrDefaultAsync(d => d.Mac == droneFabri.Mac);
+            if (existingDrone != null)
+            {
+                return BadRequest("Este MAC já está vinculado a outro drone.");
+            }
 
             _context.DroneFabris.Add(droneFabri);
             await _context.SaveChangesAsync();

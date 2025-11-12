@@ -141,6 +141,7 @@ namespace BlueSentinal.Controllers
                 return BadRequest("Este drone já está vinculado ao usuário.");
 
             drone.DroneFabri = droneFabri;
+            drone.DroneFabri.Status = true;
 
             //adiciona o ID do usuario logado ao drone
             drone.UsuarioId = new Guid(userBearer);
