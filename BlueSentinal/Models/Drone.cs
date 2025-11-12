@@ -15,7 +15,7 @@ namespace BlueSentinal.Models
         [Required(ErrorMessage = "Localização é obrigatório")]
         [Display(Name = "Localização")]
         public string? Localizacao { get; set; }
-        public long TempoAtividade { get; set; } = 0;
-
+        public long? TempoEmMili { get; set; } = 0;
+        public decimal? tempoEmHoras { get; set; }
     }
 }

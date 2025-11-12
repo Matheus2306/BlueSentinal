@@ -11,5 +11,6 @@ namespace BlueSentinal.Models
         public string? Mac { get; set; }
         [Required(ErrorMessage = "Status é obrigatório")]
         public bool? Status { get; set; } = false;
+
     }
 }

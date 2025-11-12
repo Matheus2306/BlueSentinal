@@ -76,16 +76,21 @@ namespace BlueSentinal.Controllers
         // POST: api/DroneFabris
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<DroneFabri>> PostDroneFabri(DroneFabri droneFabri)
+        public async Task<IActionResult> PostDroneFabri([FromBody] DroneFabri droneFabri)
         {
-            //verifica se o MAC escrito já existe
+
+            // verifica se o MAC escrito já existe
             var existingDrone = await _context.DroneFabris.FirstOrDefaultAsync(d => d.Mac == droneFabri.Mac);
             if (existingDrone != null)
             {
                 return BadRequest("Este MAC já está vinculado a outro drone.");
             }
 
+
+            // adiciona o drone ao contexto
             _context.DroneFabris.Add(droneFabri);
+
+            // salva as alterações no banco de dados
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetDroneFabri", new { id = droneFabri.DroneFabriId }, droneFabri);

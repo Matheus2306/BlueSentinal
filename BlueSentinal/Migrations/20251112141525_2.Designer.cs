@@ -4,6 +4,7 @@ using BlueSentinal.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BlueSentinal.Migrations
 {
     [DbContext(typeof(APIContext))]
-    partial class APIContextModelSnapshot : ModelSnapshot
+    [Migration("20251112141525_2")]
+    partial class _2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -35,17 +38,11 @@ namespace BlueSentinal.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<long?>("TempoEmMili")
-                        .HasColumnType("bigint");
-
                     b.Property<Guid?>("UsuarioId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("UsuarioId1")
                         .HasColumnType("nvarchar(450)");
-
-                    b.Property<decimal?>("tempoEmHoras")
-                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("DroneId");
 
@@ -74,9 +71,31 @@ namespace BlueSentinal.Migrations
                         .IsRequired()
                         .HasColumnType("bit");
 
+                    b.Property<Guid?>("TempoDeAtividade")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("TempoDeAtividadeId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("DroneFabriId");
 
+                    b.HasIndex("TempoDeAtividadeId");
+
                     b.ToTable("Drone Fabrica", (string)null);
+                });
+
+            modelBuilder.Entity("BlueSentinal.Models.TempoDeAtividade", b =>
+                {
+                    b.Property<Guid>("TempoDeAtividadeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("Tempo")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("TempoDeAtividadeId");
+
+                    b.ToTable("Tempo de Atividade", (string)null);
                 });
 
             modelBuilder.Entity("BlueSentinal.Models.Usuario", b =>
@@ -297,6 +316,15 @@ namespace BlueSentinal.Migrations
                     b.Navigation("DroneFabri");
 
                     b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("BlueSentinal.Models.DroneFabri", b =>
+                {
+                    b.HasOne("BlueSentinal.Models.TempoDeAtividade", "tempoDeAtividade")
+                        .WithMany()
+                        .HasForeignKey("TempoDeAtividadeId");
+
+                    b.Navigation("tempoDeAtividade");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

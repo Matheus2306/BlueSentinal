@@ -40,6 +40,7 @@ namespace BlueSentinal.Controllers
             if (string.IsNullOrEmpty(userBearer))
                 return BadRequest("Usuário sem login");
 
+
             var userId = new Guid(userBearer);
 
             // Busca todos os drones do usuário logado, incluindo dados relacionados
@@ -48,6 +49,8 @@ namespace BlueSentinal.Controllers
                 .Include(d => d.DroneFabri)
                 .Include(d => d.Usuario)
                 .ToListAsync();
+
+
 
             return Ok(drones);
         }
@@ -68,34 +71,7 @@ namespace BlueSentinal.Controllers
 
         // PUT: api/Drones/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutDrone(Guid id, Drone drone)
-        {
-            if (id != drone.DroneId)
-            {
-                return BadRequest();
-            }
 
-            _context.Entry(drone).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!DroneExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
 
         // POST: api/Drones
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
@@ -151,6 +127,22 @@ namespace BlueSentinal.Controllers
 
 
             _context.Drones.Add(drone);
+            await _context.SaveChangesAsync();
+
+            return Ok(drone);
+        }
+        // PUT: api/Drones/tempo/{id}
+        [HttpPut("tempo/{id}")]
+        public async Task<IActionResult> AtualizarTempo(Guid id, [FromBody] long tempo)
+        {
+            var drone = await _context.Drones.FindAsync(id);
+            if (drone == null)
+                return NotFound("Drone não encontrado.");
+
+            // Calcula o tempo em horas e formata com 2 casas decimais
+            drone.tempoEmHoras = Math.Round((decimal)(tempo / 1000.0 / 60 / 60), 2);
+
+            _context.Entry(drone).Property(d => d.tempoEmHoras).IsModified = true;
             await _context.SaveChangesAsync();
 
             return Ok(drone);

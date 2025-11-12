@@ -4,6 +4,7 @@ using BlueSentinal.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BlueSentinal.Migrations
 {
     [DbContext(typeof(APIContext))]
-    partial class APIContextModelSnapshot : ModelSnapshot
+    [Migration("20251112165552_3")]
+    partial class _3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -35,7 +38,7 @@ namespace BlueSentinal.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<long?>("TempoEmMili")
+                    b.Property<long?>("Tempo")
                         .HasColumnType("bigint");
 
                     b.Property<Guid?>("UsuarioId")
@@ -43,9 +46,6 @@ namespace BlueSentinal.Migrations
 
                     b.Property<string>("UsuarioId1")
                         .HasColumnType("nvarchar(450)");
-
-                    b.Property<decimal?>("tempoEmHoras")
-                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("DroneId");
 
