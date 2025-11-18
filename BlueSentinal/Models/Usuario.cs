@@ -11,6 +11,6 @@ namespace BlueSentinal.Models
 
         [DataType(DataType.Date)]
         [Display(Name = "Data de Nascimento")]
-        public string? Nascimento { get; set; }
+        public DateTime? Nascimento { get; set; }
     }
 }

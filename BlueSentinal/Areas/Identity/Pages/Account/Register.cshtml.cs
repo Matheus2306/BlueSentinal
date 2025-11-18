@@ -104,7 +104,7 @@ namespace BlueSentinal.Areas.Identity.Pages.Account
 
             [DataType(DataType.Date)]
             [Display(Name = "Data de Nascimento")]
-            public string? Nascimento { get; set; }
+            public DateTime? Nascimento { get; set; }
         }
 
 

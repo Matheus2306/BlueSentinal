@@ -4,13 +4,14 @@ using BlueSentinal.Models;
 using System;
 using BlueSentinal.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddDbContext<APIContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("StringSomme")));
 
 //builder.Services.AddDefaultIdentity<Usuario>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<APIContext>();
 
@@ -26,11 +27,11 @@ builder.Services.AddIdentityApiEndpoints<Usuario>(options =>
     options.SignIn.RequireConfirmedEmail = false; // Exige confirma��o de email
     options.SignIn.RequireConfirmedAccount = false; // Exige confirma��o de conta
     options.User.RequireUniqueEmail = true; // Exige email �nico
-    options.Password.RequireNonAlphanumeric = false; // Exige caracteres n�o alfanum�ricos
-    options.Password.RequireLowercase = false; // Exige letras min�sculas
-    options.Password.RequireUppercase = false; // Exige letras mai�sculas
+    options.Password.RequireNonAlphanumeric = true; // Exige caracteres n�o alfanum�ricos
+    options.Password.RequireLowercase = true; // Exige letras min�sculas
+    options.Password.RequireUppercase = true; // Exige letras mai�sculas
     options.Password.RequireDigit = false; // Exige d�gitos num�ricos
-    options.Password.RequiredLength = 4; // Exige comprimento m�nimo da senha
+    options.Password.RequiredLength = 8; // Exige comprimento m�nimo da senha
 })
 
 .AddRoles<IdentityRole>() // Adicionando o servi�o de roles
@@ -111,7 +112,27 @@ app.UseAuthorization(); // Habilita a autoriza��o
 
 app.MapControllers(); // Mapeia os controladores
 
-app.MapGroup("/Usuario").MapIdentityApi<Usuario>(); // Mapeia o grupo de endpoints de autentica��o
+
+var usuarioGroup = app.MapGroup("/Usuario");
+usuarioGroup.MapIdentityApi<Usuario>();
+usuarioGroup.MapPost("/registrar", async (UserManager<Usuario> userManager, [FromBody] UsuarioRegisterRequest request) =>
+{
+    var user = new Usuario
+    {
+        UserName = request.Email,
+        Email = request.Email,
+        Nome = request.Nome,
+        Nascimento = request.Nascimento
+    };
+
+    var result = await userManager.CreateAsync(user, request.Password);
+
+    if (!result.Succeeded)
+        return Results.BadRequest(result.Errors);
+
+    return Results.Ok(new { user.Id, user.Email, user.Nome, user.Nascimento });
+});
+
 
 app.Run(); // Executa o aplicativo
 

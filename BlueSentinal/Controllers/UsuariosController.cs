@@ -1,5 +1,6 @@
 ﻿using BlueSentinal.Data;
 using BlueSentinal.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -21,31 +22,15 @@ namespace BlueSentinal.Controllers
             _context = context;
         }
 
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Usuario>>> GetUsers()
         {
             return await _context.Users.ToListAsync();
         }
 
-        [HttpPost("registrar")]
-        public async Task<ActionResult> createUser(Usuario usuario)
-        {
 
-            //coleta o token do usuário logado
-            var userBearer = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (String.IsNullOrEmpty(userBearer))
-                return BadRequest("Usuario sem bearer");
-
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == usuario.Email);
-            if (existingUser != null)
-                return BadRequest("Este usuário já está vinculado.");
-
-            _context.Add(usuario);
-            await _context.SaveChangesAsync();
-            return Ok(usuario);
-        }
-
-
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(string id)
         {
@@ -59,6 +44,33 @@ namespace BlueSentinal.Controllers
             return NoContent();
         }
 
+        [Authorize]
+        [HttpDelete("me")]
+        public async Task<IActionResult> DeleteUser()
+        {
+            // Coleta o ID do usuário logado a partir do token (bearer)
+            var userBearer = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userBearer))
+                return Unauthorized("Usuário não autenticado.");
+
+            // Busca o usuário no banco de dados
+            var usuario = await _userManager.FindByIdAsync(userBearer);
+            if (usuario == null)
+                return NotFound("Usuário não encontrado.");
+
+            // Remove o usuário
+            var result = await _userManager.DeleteAsync(usuario);
+            if (!result.Succeeded)
+            {
+                var erros = string.Join(", ", result.Errors.Select(e => e.Description));
+                return BadRequest($"Erro ao excluir o usuário: {erros}");
+            }
+
+            return NoContent();
+        }
+
+        [Authorize(Roles = "Admin")]
         [HttpPost("adicionarRole")]
         public async Task<IActionResult> AdicionarRoleAoUsuario(string userId, string role)
         {
