@@ -17,5 +17,6 @@ namespace BlueSentinal.Models
         public string? Localizacao { get; set; }
         public long? TempoEmMili { get; set; } = 0;
         public decimal? tempoEmHoras { get; set; }
+        public bool? Status { get; set; } = false;
     }
 }
