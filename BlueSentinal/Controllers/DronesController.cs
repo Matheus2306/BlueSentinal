@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace BlueSentinal.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class DronesController : ControllerBase
@@ -34,6 +33,7 @@ namespace BlueSentinal.Controllers
                 .ToListAsync();
         }
 
+        [Authorize]
         // GET: api/Drones/getDroneUser
         [HttpGet("getDroneUser")]
         public async Task<ActionResult<IEnumerable<Drone>>> GetUserDrone()
@@ -68,6 +68,7 @@ namespace BlueSentinal.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
 
         // DELETE: api/Drones/5
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteDrone(Guid id)
         {
@@ -91,6 +92,7 @@ namespace BlueSentinal.Controllers
             return _context.Drones.Any(e => e.DroneId == id);
         }
         // POST: api/Drones/vincular
+        [Authorize]
         [HttpPost("vincular")]
         public async Task<IActionResult> VincularDrone(string mac, Drone drone)
         {

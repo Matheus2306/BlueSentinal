@@ -102,6 +102,29 @@ namespace BlueSentinal.Controllers
 
             return Ok($"Role '{role}' adicionada ao usuário '{usuario.UserName}'.");
         }
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<ActionResult<Usuario>> GetCurrentUser()
+        {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("Usuário não autenticado.");
+
+            var usuario = await _userManager.FindByIdAsync(userId);
+            if (usuario == null)
+                return NotFound("Usuário não encontrado.");
+
+            // Retorne apenas os dados necessários, se preferir
+            return Ok(new
+            {
+                usuario.Id,
+                usuario.UserName,
+                usuario.Email,
+                usuario.Nome,
+                usuario.Nascimento
+            });
+        }
 
     }
 }
