@@ -263,7 +263,7 @@ Base: http://bluesentinal.somee.com/api/Usuarios
 ```
 
 --------------------------------------------------------------------------------
-ENDPOINTS /DroneFabris
+ENDPOINTS /api/DroneFabris
 Base: http://bluesentinal.somee.com/api/DroneFabris  
 Classe decorada com [Authorize(Roles = "Admin")] — exige role Admin.
 
@@ -308,8 +308,7 @@ Classe decorada com [Authorize(Roles = "Admin")] — exige role Admin.
 ```json
 {
   "modelo": "Z3",
-  "mac": "12:34:56:78:9A:BC",
-  "status": false
+  "mac": "12:34:56:78:9A:BC"
 }
 ```
 - Success (201):
@@ -329,7 +328,7 @@ Classe decorada com [Authorize(Roles = "Admin")] — exige role Admin.
 ```
 
 --------------------------------------------------------------------------------
-ENDPOINTS /Drones
+ENDPOINTS /api/Drones
 Base: http://bluesentinal.somee.com/api/Drones  
 Classe tem [Authorize] — exige autenticação.
 
