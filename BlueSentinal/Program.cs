@@ -11,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddDbContext<APIContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("StringSomme")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 //builder.Services.AddDefaultIdentity<Usuario>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<APIContext>();
 
@@ -115,7 +115,7 @@ app.MapControllers(); // Mapeia os controladores
 
 var usuarioGroup = app.MapGroup("/Usuario");
 usuarioGroup.MapIdentityApi<Usuario>();
-usuarioGroup.MapPost("/registrar", async (UserManager<Usuario> userManager, [FromBody] UsuarioRegisterRequest request) =>
+usuarioGroup.MapPost("/registrar", async (UserManager<Usuario> userManager, RoleManager<IdentityRole> roleManager, [FromBody] UsuarioRegisterRequest request) =>
 {
     var user = new Usuario
     {
@@ -129,6 +129,13 @@ usuarioGroup.MapPost("/registrar", async (UserManager<Usuario> userManager, [Fro
 
     if (!result.Succeeded)
         return Results.BadRequest(result.Errors);
+
+    // Garante que a role "User" existe
+    if (!await roleManager.RoleExistsAsync("User"))
+        await roleManager.CreateAsync(new IdentityRole("User"));
+
+    // Adiciona o usuário à role "User"
+    await userManager.AddToRoleAsync(user, "User");
 
     return Results.Ok(new { user.Id, user.Email, user.Nome, user.Nascimento });
 });

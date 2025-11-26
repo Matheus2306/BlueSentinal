@@ -129,17 +129,17 @@ namespace BlueSentinal.Controllers
         }
         // PUT: api/Drones/tempo/{id}
         [HttpPut("tempo/{id}")]
-        public async Task<IActionResult> AtualizarTempo(Guid id, [FromBody] long tempo)
+        public async Task<IActionResult> AtualizarTempo(Guid id, [FromBody] AtualizarTempoStatusDto dto)
         {
             var drone = await _context.Drones.FindAsync(id);
             if (drone == null)
                 return NotFound("Drone não encontrado.");
-            drone.TempoEmMili = tempo;
 
-            // Calcula o tempo em horas e formata com 2 casas decimais
-            drone.tempoEmHoras = Math.Round((decimal)(tempo / 1000.0 / 60 / 60), 2);
+            drone.TempoEmMili = dto.Tempo;
+            drone.tempoEmHoras = Math.Round((decimal)(dto.Tempo / 1000.0 / 60 / 60), 2);
+            drone.Status = dto.Status;
 
-            _context.Entry(drone).Property(d => d.tempoEmHoras + d.TempoEmMili).IsModified = true;
+            _context.Entry(drone).State = EntityState.Modified;
             await _context.SaveChangesAsync();
 
             return Ok(drone);
@@ -168,5 +168,10 @@ namespace BlueSentinal.Controllers
 
             return Ok(drones);
         }
+    }
+    public class AtualizarTempoStatusDto
+    {
+        public long Tempo { get; set; }
+        public bool Status { get; set; }
     }
 }

@@ -115,14 +115,19 @@ namespace BlueSentinal.Controllers
             if (usuario == null)
                 return NotFound("Usuário não encontrado.");
 
-            // Retorne apenas os dados necessários, se preferir
+            var roles = await _userManager.GetRolesAsync(usuario);
+
+
             return Ok(new
             {
                 usuario.Id,
                 usuario.UserName,
                 usuario.Email,
                 usuario.Nome,
-                usuario.Nascimento
+                usuario.Nascimento,
+                Roles = roles
+
+
             });
         }
 
