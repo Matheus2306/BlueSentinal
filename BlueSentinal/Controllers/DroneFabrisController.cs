@@ -44,6 +44,23 @@ namespace BlueSentinal.Controllers
             return droneFabri;
         }
 
+        //metodo get por modelo 
+        [HttpGet("getByModel/{model}")]
+        public async Task<ActionResult<IEnumerable<DroneFabri>>> getByModel(string model)
+        {
+            if (string.IsNullOrEmpty(model))
+                return BadRequest("Modelo não informado.");
+
+            var droneFabris = await _context.DroneFabris
+                .Where(df => df.Modelo != null && EF.Functions.Like(df.Modelo.ToLower(), $"%{model.ToLower()}%"))
+                .ToListAsync();
+
+            if (droneFabris == null || droneFabris.Count == 0)
+                return NotFound("Nenhum drone encontrado para o modelo informado.");
+
+            return Ok(droneFabris);
+        }
+
         // PUT: api/DroneFabris/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]

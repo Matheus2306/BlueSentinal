@@ -101,26 +101,24 @@ namespace BlueSentinal.Controllers
             if (droneFabri == null)
                 return NotFound("DroneFabri não encontrado");
 
-            //coleta o token do usuário logado
+            // Coleta o token do usuário logado
             var userBearer = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userBearer))
                 return BadRequest("Usuário sem login");
 
-            //verifica se o drone já está vinculado ao usuário
-            var existingDrone = await _context.Drones
-                .FirstOrDefaultAsync(d => d.DroneFabriId == droneFabri.DroneFabriId && d.UsuarioId == drone.UsuarioId);
-            if (existingDrone != null)
-                return BadRequest("Este drone já está vinculado ao usuário.");
+            // Verifica se já existe um drone vinculado a este DroneFabri
+            var existDrone = await _context.Drones.AnyAsync(d => d.DroneFabriId == droneFabri.DroneFabriId && d.UsuarioId != null);
+            if (existDrone)
+                return BadRequest("Drone já está vinculado a um usuário.");
 
             drone.DroneFabri = droneFabri;
             drone.DroneFabri.Status = true;
 
-            //adiciona o ID do usuario logado ao drone
+            // Adiciona o ID do usuário logado ao drone
             drone.UsuarioId = new Guid(userBearer);
 
-            //adiciona o usuário ao drone pelo Id do bearer
+            // Adiciona o usuário ao drone pelo Id do bearer
             drone.Usuario = await _context.Users.FindAsync(userBearer);
-
 
             _context.Drones.Add(drone);
             await _context.SaveChangesAsync();
@@ -150,18 +148,21 @@ namespace BlueSentinal.Controllers
         [HttpGet("getByUserName/{userName}")]
         public async Task<ActionResult<IEnumerable<Drone>>> GetDronesByUserName(string userName)
         {
-            // Verifica se o nome do usuário foi fornecido
             if (string.IsNullOrEmpty(userName))
                 return BadRequest("Nome do usuário não fornecido.");
 
-            // Busca o usuário pelo nome
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == userName);
-            if (user == null)
-                return NotFound("Usuário não encontrado.");
+            // Busca usuários cujo nome contenha o texto informado (case-insensitive)
+            var users = await _context.Users
+                .Where(u => u.Nome != null && EF.Functions.Like(u.Nome.ToLower(), $"%{userName.ToLower()}%"))
+                .ToListAsync();
 
-            // Busca os drones associados ao usuário
+            if (users == null || users.Count == 0)
+                return NotFound("Nenhum usuário encontrado.");
+
+            // Busca os drones associados aos usuários encontrados
+            var userIds = users.Select(u => u.Id).ToList();
             var drones = await _context.Drones
-                .Where(d => d.UsuarioId == new Guid(user.Id))
+                .Where(d => d.UsuarioId != null && userIds.Contains(d.UsuarioId.ToString()))
                 .Include(d => d.DroneFabri)
                 .Include(d => d.Usuario)
                 .ToListAsync();
