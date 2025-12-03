@@ -1,42 +1,45 @@
-# BlueSentinal — Documentação de Endpoints
+# BlueSentinal — Documentação completa de Endpoints (implantada)
 
 Status: Hospedado em http://bluesentinal.somee.com  
 Base API: http://bluesentinal.somee.com/api  
 Grupo Identity: http://bluesentinal.somee.com/Usuario  
 Swagger (interativo): http://bluesentinal.somee.com/swagger
 
-Este README documenta os endpoints expostos pela API do BlueSentinal com foco em: autenticação/usuários (Identity), gerenciamento de drones e registros de fábrica (DroneFabris). A documentação foi produzida a partir da leitura dos controllers no último commit — use o Swagger no deploy para confirmar schemas em runtime.
+Este README mapeia todos os endpoints implementados, requisitos de header, parâmetros e exemplos de request/response em JSON. Use-o como referência para integrar clientes (Postman, Insomnia, SDKs...). A documentação foi gerada a partir da leitura do código-fonte do repositório.
 
-Sumário
-- Visão geral
-- Base URL e headers
-- Sessão: Usuário & Identity (todos os endpoints relacionados)
-- Sessão: DroneFabris (fábrica / hardware)
-- Sessão: Drones (usuário / vinculação)
-- Códigos de resposta e formato de erro
-- Exemplos curl
-- Boas práticas / Observações
+Índice
+- Regras gerais (headers / auth)
+- Endpoints Identity (grupo /Usuario) — endpoints gerados + custom
+- Endpoints /Usuarios (controller api)
+- Endpoints /DroneFabris (controller api)
+- Endpoints /Drones (controller api)
+- Exemplos curl rápidos
+- Observações e recomendações
 
-1) Visão geral
-BlueSentinal é uma API ASP.NET Core que combina endpoints do Identity (MapIdentityApi) e controllers REST para gerenciar usuários, drones e registros de hardware. Autenticação baseada em JWT (Bearer) é usada na documentação — o login foi documentado para retornar accessToken/tokenType.
+--------------------------------------------------------------------------------
+Regras gerais (headers / auth)
+- Content-Type: application/json — para requests com body JSON.
+- Accept: application/json — recomendado para todas as requisições.
+- Authorization: Bearer <JWT_TOKEN> — usado por endpoints decorados com [Authorize].
+- CORS: servidor tem política "AllowAll" (mas recomenda-se HTTPS em produção).
+- Para rotas que usam path params: substituir conforme indicado (ex.: {id}, {userName}).
+- Para rotas que usam query params: passar na query string (ex.: ?mac=AA:BB:CC...).
 
-2) Base URL e headers
-- Host (produção): http://bluesentinal.somee.com
-- API prefix (controllers): http://bluesentinal.somee.com/api
-- Grupo Identity: http://bluesentinal.somee.com/Usuario
-Headers recomendados:
-- Content-Type: application/json (para requests com body)
-- Accept: application/json
-- Authorization: Bearer <JWT_TOKEN> (para endpoints protegidos)
+--------------------------------------------------------------------------------
+ENDPOINTS IDENTITY (grupo /Usuario)
+Observação: o projeto registra endpoints do Identity via builder.Services.AddIdentityApiEndpoints<Usuario>(...) e, em Program.cs, cria um group com app.MapGroup("/Usuario"); dentro dele chama usuarioGroup.MapIdentityApi<Usuario>() — isso adiciona automaticamente um conjunto de endpoints relacionados ao fluxo de autenticação/conta. Além disso, existe um endpoint custom mapeado manualmente: POST /Usuario/registrar.
 
-3) Sessão: Usuário & Identity
-Nesta seção estão todos os endpoints relacionados a usuários, autenticação e fluxos do Identity (registro, login, recuperação, perfil, roles).
+Importante: os endpoints gerados pelo MapIdentityApi são adicionados em runtime; nomes exatos, verbos e payloads podem variar conforme a versão do pacote. Para obter a lista e especificações exatas em execução, abra o Swagger UI (http://<host>/swagger).
 
-3.1 POST /Usuario/registrar
-- Descrição: registra um novo usuário (endpoint custom no Program.cs).
-- Auth: aberto.
-- Headers: Content-Type: application/json
-- Body (exemplo):
+1) POST /Usuario/registrar
+- Onde: Program.cs (mapeado manualmente em usuarioGroup.MapPost)
+- Método: POST
+- Rota: /Usuario/registrar
+- Autenticação: aberto
+- Headers:
+  - Content-Type: application/json
+  - Accept: application/json
+- Body exemplo:
 ```json
 {
   "email": "usuario@example.com",
@@ -46,327 +49,235 @@ Nesta seção estão todos os endpoints relacionados a usuários, autenticação
   "nascimento": "1990-01-01"
 }
 ```
-- Success (200/201):
+- Responses (exemplo):
+Success (201/200):
 ```json
 {
   "message": "Usuário criado com sucesso",
   "userId": "d9b1d7db-5c9a-4f1a-9f7d-3b1c2a5e6f77"
 }
 ```
-- Validation (400):
+Validation error (400):
 ```json
 {
-  "errors": ["Email já existe", "Senha inválida"]
+  "errors": ["Email já existe", "Password inválida"]
 }
 ```
 
-3.2 POST /Usuario/login
-- Descrição: realiza login — documentado para retornar token JWT (Bearer) e não usar cookies.
-- Auth: aberto.
-- Body (exemplo):
-```json
-{
-  "email": "usuario@example.com",
-  "password": "Senha123!"
-}
-```
-- Success (200):
-```json
-{
-  "accessToken": "<jwt_token_here>",
-  "tokenType": "Bearer",
-  "expiresIn": 3600,
-  "user": {
-    "id": "<user-id>",
-    "email": "usuario@example.com",
-    "nome": "Nome Completo"
-  }
-}
-```
-- Invalid (401):
-```json
-{ "error": "Credenciais inválidas" }
-```
-Uso posterior: incluir no header Authorization: Bearer <accessToken>.
+--------------------------------------------------------------------------------
+2) Endpoints gerados automaticamente pelo MapIdentityApi (grupo /Usuario)
+- Observação: MapIdentityApi normalmente expõe endpoints padrão de Identity. Abaixo estão os endpoints típicos que costumam existir; confirme via Swagger para a especificação exata.
 
-3.3 Outros endpoints padrões do Identity (quando expostos pelo MapIdentityApi)
-OBS: a lista abaixo corresponde aos endpoints que MapIdentityApi normalmente expõe. Confirme via Swagger em runtime.
+Exemplos típicos (nome e payload podem variar):
+- POST /Usuario/login
+  - Descrição: autentica usuário e retorna token JWT (accessToken, tokenType, expiresIn)
+  - Auth: aberto
+  - Body exemplo: { "email": "user@example.com", "password": "Senha123!" }
+  - Response (200): { "accessToken": "<jwt>", "tokenType": "Bearer", "expiresIn": 3600 }
+
 - POST /Usuario/logout
-  - Auth: Authorization: Bearer <token> (quando aplicável)
-  - Success: 204 No Content
+  - Descrição: encerra sessão (quando aplicável)
+  - Auth: pode exigir token
+  - Response: 204 No Content
+
 - POST /Usuario/forgot-password
-  - Body: { "email": "usuario@example.com" }
-  - Success: { "message": "Email de recuperação enviado (se o email existir)" }
+  - Descrição: inicia fluxo de recuperação (envia token por email)
+  - Auth: aberto
+  - Body: { "email": "user@example.com" }
+
 - POST /Usuario/reset-password
-  - Body: { "email":"usuario@example.com", "token":"<token>", "password":"NovaSenha123!" }
-  - Success: { "message": "Senha redefinida com sucesso" }
-- POST /Usuario/confirm-email
-  - Body: { "userId":"<id>", "code":"<codigo>" }
-  - Success: { "message": "Email confirmado com sucesso" }
+  - Descrição: redefine senha usando token
+  - Auth: aberto
+  - Body: { "email": "user@example.com", "token": "<token>", "password": "NovaSenha123!" }
+
 - POST /Usuario/change-password
+  - Descrição: altera senha do usuário autenticado
   - Auth: Authorization: Bearer <token>
-  - Body: { "currentPassword":"SenhaAntiga", "newPassword":"SenhaNova" }
-  - Success: { "message": "Senha alterada com sucesso" }
-- GET /Usuario/me (se exposto)
+  - Body: { "oldPassword": "...", "newPassword": "..." }
+
+- GET /Usuario/me  (ou GET /Usuario)
+  - Descrição: retorna informações do usuário autenticado
   - Auth: Authorization: Bearer <token>
-  - Success:
-```json
-{
-  "id": "<user-id>",
-  "email": "usuario@example.com",
-  "nome": "Nome Completo",
-  "nascimento": "1990-01-01"
-}
-```
 
-3.4 Endpoints de gerenciamento de usuários (controller /api/Usuarios)
-- GET /api/Usuarios
-  - Descrição: lista todos os usuários.
-  - Auth: nenhum atributo específico no código; pode requerer autorização em produção.
-  - Success (200): array de usuários (exemplo):
-```json
-[
-  { "id":"<id>", "userName":"usuario@example.com", "email":"usuario@example.com", "nome":"Nome" }
-]
-```
-- DELETE /api/Usuarios/{id}
-  - Auth: Admin (Authorization: Bearer <token> com role = Admin)
-  - Success: 204 No Content
-  - Not found (404):
-```json
-{ "error": "Usuário não encontrado" }
-```
-- DELETE /api/Usuarios/me
-  - Auth: qualquer usuário autenticado
-  - Success: 204 No Content
-  - Unauthorized (401):
-```json
-{ "error": "Usuário não autenticado." }
-```
-- POST /api/Usuarios/adicionarRole
-  - Auth: Admin
-  - Params: query (userId & role) ou body { "userId":"...", "role":"Admin" }
-  - Success:
-```json
-{ "message": "Role 'Admin' adicionada ao usuário 'usuario@example.com'." }
-```
-  - Errors:
-```json
-{ "error": "Usuário não encontrado" }
-```
-ou
-```json
-{ "error": "Usuário já está na role 'Admin'." }
-```
+- POST /Usuario/confirm-email
+  - Descrição: confirma email usando token (usado em rotas geradas)
+  - Body: { "userId": "...", "token": "..." }
 
-4) Sessão: DroneFabris (fábrica / hardware)
-Classe decorada com [Authorize(Roles = "Admin")] — exige role Admin.
+- Endpoints adicionais possíveis: external login callbacks, set-password, enable/disable 2FA, manage external logins.
 
-- GET /api/DroneFabris
-  - Success (200):
-```json
-[
-  { "droneFabriId":"<guid>", "modelo":"X1", "mac":"AA:BB:CC:DD:EE:FF", "status": false }
-]
-```
-- GET /api/DroneFabris/{id}
-  - Success (200):
-```json
-{ "droneFabriId":"<guid>", "modelo":"X1", "mac":"AA:BB:CC:DD:EE:FF", "status": false }
-```
-  - Not found (404):
-```json
-{ "error": "DroneFabri não encontrado" }
-```
-- PUT /api/DroneFabris/{id}
-  - Body exemplo:
-```json
-{ "droneFabriId":"<guid>", "modelo":"X1-Atualizado", "mac":"AA:BB:...", "status": true }
-```
-  - Success: 204 No Content
-  - Bad Request (400): id mismatch
-```json
-{ "error": "Payload inválido / id mismatch" }
-```
-- POST /api/DroneFabris
-  - Body exemplo:
-```json
-{ "modelo":"Z3", "mac":"12:34:56:78:9A:BC", "status": false }
-```
-  - Duplicate MAC (400):
-```json
-{ "error": "Este MAC já está vinculado a outro drone." }
-```
-  - Success (201):
-```json
-{ "droneFabriId":"<guid>", "modelo":"Z3", "mac":"12:34:56:78:9A:BC", "status": false }
-```
-- DELETE /api/DroneFabris/{id}
-  - Success: 204 No Content
-  - Not found:
-```json
-{ "error": "DroneFabri não encontrado" }
-```
+Importante:
+- Como esses endpoints são gerados automaticamente, os nomes e contratos podem diferir. Use o Swagger UI (ex.: http://bluesentinal.somee.com/swagger) para visualizar a lista completa, exemplos de request/response e exigência de autorização em seu ambiente de execução.
 
-5) Sessão: Drones (usuário / vinculação)
-Classe tem [Authorize] — exige autenticação; alguns endpoints exigem Admin.
+--------------------------------------------------------------------------------
+ENDPOINTS /Usuarios (controller: BlueSentinal/Controllers/UsuariosController.cs)
+Base: http://bluesentinal.somee.com/api/Usuarios  
+- Route attribute: [Route("api/[controller]")]
 
-- GET /api/Drones
-  - Auth: Admin
-  - Success (200): lista completa (includes DroneFabri e Usuario)
-```json
-[
-  {
-    "droneId":"<guid>",
-    "droneFabriId":"<guid>",
-    "usuarioId":"<guid>",
-    "localizacao":"Gate A",
-    "tempoEmMili":3600000,
-    "tempoEmHoras":1.0,
-    "status": true,
-    "droneFabri": { "droneFabriId":"...", "modelo":"X1", "mac":"AA:BB:...", "status": true },
-    "usuario": { "id":"...", "email":"..." }
-  }
-]
-```
-- GET /api/Drones/getDroneUser
-  - Auth: qualquer usuário autenticado
-  - Retorna drones vinculados ao usuário do token (Claim NameIdentifier)
-  - Success (200):
-```json
-[
-  {
-    "droneId":"<guid>",
-    "droneFabriId":"<guid>",
-    "localizacao":"Gate A",
-    "tempoEmMili":3600000,
-    "tempoEmHoras":1.0,
-    "status": true,
-    "droneFabri": { "droneFabriId":"...", "modelo":"X1", "mac":"AA:BB:..." }
-  }
-]
-```
-- GET /api/Drones/getByUserName/{userName}
-  - Auth: Admin
-  - Path param: userName
-  - Errors:
-```json
-{ "error": "Nome do usuário não fornecido." }
-```
-ou
-```json
-{ "error": "Usuário não encontrado." }
-```
-- POST /api/Drones/vincular?mac={mac}
-  - Auth: usuário autenticado
-  - Query param: mac (MAC do DroneFabri)
-  - Body exemplo:
-```json
-{ "localizacao":"Gate A", "tempoEmMili":0, "status": false }
-```
-  - Comportamento:
-    - Busca DroneFabri por MAC; se não encontrado -> 404
-    - Verifica se já existe vínculo com esse DroneFabriId e UsuarioId -> 400
-    - Atribui UsuarioId = id do claim NameIdentifier e vincula DroneFabri; seta DroneFabri.Status = true; persiste.
-  - Success (200):
-```json
-{
-  "droneId":"<guid>",
-  "droneFabriId":"<guid>",
-  "usuarioId":"<guid>",
-  "localizacao":"Gate A",
-  "tempoEmMili":0,
-  "tempoEmHoras":0.0,
-  "status": false
-}
-```
-  - Errors:
-```json
-{ "error": "DroneFabri não encontrado" }
-```
-ou
-```json
-{ "error": "Este drone já está vinculado ao usuário." }
-```
-- PUT /api/Drones/tempo/{id}
-  - Auth: usuário autenticado
-  - Body: raw number (long) — tempo em milissegundos (ex.: 3600000)
-  - Success (200):
-```json
-{ "droneId":"<guid>", "tempoEmMili":7200000, "tempoEmHoras":2.0 }
-```
-  - Not found (404):
-```json
-{ "error": "Drone não encontrado." }
-```
-- DELETE /api/Drones/{id}
-  - Auth: usuário autenticado
-  - Comportamento: marca DroneFabri.Status = false, remove drone
-  - Success: 204 No Content
-  - Not found:
-```json
-{ "error": "Drone não encontrado." }
-```
+1) GET /api/Usuarios
+- Método: GET
+- Descrição: retorna todos os usuários (lista de Usuario)
+- Auth: não há [Authorize] nesse método no código atual (verificar política do ambiente)
+- Response (200): array de usuários
 
-6) Códigos de resposta e formato de erro
-- 200 OK — sucesso com corpo
-- 201 Created — recurso criado
-- 204 No Content — sucesso sem corpo (ex.: DELETE)
-- 400 Bad Request — validação / parâmetros inválidos
-- 401 Unauthorized — token ausente ou inválido
-- 403 Forbidden — sem permissão / role
-- 404 Not Found — recurso não encontrado
-- 422 Unprocessable Entity — falha de validação detalhada
-- 500 Internal Server Error — erro no servidor
+2) DELETE /api/Usuarios/{id}
+- Método: DELETE
+- Rota: /api/Usuarios/{id}
+- Auth: [Authorize(Roles = "Admin")]
+- Descrição: exclui usuário por id
+- Responses:
+  - 204 No Content em sucesso
+  - 404 Not Found se usuário não existir
 
-Formato de erro sugerido (padronizar):
-```json
-{
-  "error": {
-    "code": 400,
-    "message": "Validation failed",
-    "details": [
-      { "field": "email", "message": "Email inválido" }
-    ]
-  }
-}
-```
+3) DELETE /api/Usuarios/me
+- Método: DELETE
+- Rota: /api/Usuarios/me
+- Auth: [Authorize]
+- Descrição: exclui a própria conta do usuário autenticado (obtém userId do claim NameIdentifier)
+- Responses:
+  - 204 No Content em sucesso
+  - 401 Unauthorized se token inválido/ausente
+  - 404 Not Found se usuário não encontrado
+  - 400 Bad Request em erros ao deletar (retorna descrição)
 
-7) Exemplos curl
-- Registrar (Identity custom)
-```bash
-curl -X POST "http://bluesentinal.somee.com/Usuario/registrar" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"usuario@example.com","password":"Senha123!","confirmPassword":"Senha123!","nome":"Joao Silva","nascimento":"1990-01-01"}'
-```
-- Login (recebe accessToken/tokenType — sem cookies)
-```bash
-curl -X POST "http://bluesentinal.somee.com/Usuario/login" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"usuario@example.com","password":"Senha123!"}'
-```
-- Listar drones do usuário autenticado
-```bash
-curl -X GET "http://bluesentinal.somee.com/api/Drones/getDroneUser" \
-  -H "Authorization: Bearer <TOKEN>" -H "Accept: application/json"
-```
-- Vincular drone por MAC
-```bash
-curl -X POST "http://bluesentinal.somee.com/api/Drones/vincular?mac=AA:BB:CC:DD:EE:FF" \
-  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
-  -d '{"localizacao":"Gate A","tempoEmMili":0,"status":false}'
-```
+4) POST /api/Usuarios/adicionarRole
+- Método: POST
+- Rota: /api/Usuarios/adicionarRole
+- Auth: [Authorize(Roles = "Admin")]
+- Parâmetros: userId (string), role (string) — podem ser fornecidos via query ou body
+- Descrição: adiciona uma role a um usuário; cria a role se não existir
+- Responses:
+  - 200 OK com mensagem de sucesso
+  - 400 Bad Request se usuário já tiver a role ou erro na criação
+  - 404 Not Found se usuário não encontrado
 
-8) Boas práticas e observações
-- Use HTTPS em produção (o host atual está em HTTP público; configure TLS).
-- Não exponha tokens em repositórios públicos.
-- Use paginação para listagens grandes.
-- Padronize erros e mensagens para facilitar tratamento no cliente.
-- Verifique o Swagger do deploy para obter schemas / exemplos reais:
-  - http://bluesentinal.somee.com/swagger
-  - http://bluesentinal.somee.com/Usuario/swagger
+5) GET /api/Usuarios/me
+- Método: GET
+- Rota: /api/Usuarios/me
+- Auth: [Authorize]
+- Descrição: retorna dados do usuário autenticado (Id, UserName, Email, Nome, Nascimento, Roles)
+- Responses:
+  - 200 OK com objeto do usuário
+  - 401/404 conforme aplicável
 
-Se desejar eu:
-- Faço o push desta versão para uma branch (ex.: v8) e abro PR no repositório — autorize se quiser que eu tente criar o PR.
-- Gero coleção Postman/Insomnia com todos os endpoints.
-- Gero um OpenAPI (YAML/JSON) a partir do Swagger do host (se acessível).
+--------------------------------------------------------------------------------
+ENDPOINTS /DroneFabris (controller: BlueSentinal/Controllers/DroneFabrisController.cs)
+Base: http://bluesentinal.somee.com/api/DroneFabris  
+- Route attribute: [Route("api/[controller]")]
+- Controller decorado com [Authorize(Roles = "Admin")] — exige Admin para todos os métodos
+
+1) GET /api/DroneFabris
+- Método: GET
+- Descrição: lista todos os DroneFabri
+- Auth: Admin
+- Response (200): array de DroneFabri
+
+2) GET /api/DroneFabris/{id}
+- Método: GET
+- Rota: /api/DroneFabris/{id}
+- Auth: Admin
+- Descrição: retorna DroneFabri por id
+- Responses: 200 com objeto, 404 se não encontrado
+
+3) GET /api/DroneFabris/getByModel/{model}
+- Método: GET
+- Rota: /api/DroneFabris/getByModel/{model}
+- Auth: Admin
+- Descrição: retorna DroneFabri filtrados por modelo (case-insensitive)
+- Responses: 200 OK, 400 Bad Request se model vazio, 404 se nenhum encontrado
+
+4) PUT /api/DroneFabris/{id}
+- Método: PUT
+- Rota: /api/DroneFabris/{id}
+- Auth: Admin
+- Descrição: atualiza DroneFabri
+- Responses: 204 No Content em sucesso, 400 Bad Request em payload inválido, 404 se id não existir
+
+5) POST /api/DroneFabris
+- Método: POST
+- Auth: Admin
+- Descrição: cria novo DroneFabri (verifica MAC duplicado)
+- Responses: 201 Created com objeto, 400 em MAC duplicado
+
+6) DELETE /api/DroneFabris/{id}
+- Método: DELETE
+- Auth: Admin
+- Descrição: remove DroneFabri
+- Responses: 204 No Content, 404 se não encontrado
+
+--------------------------------------------------------------------------------
+ENDPOINTS /Drones (controller: BlueSentinal/Controllers/DronesController.cs)
+Base: http://bluesentinal.somee.com/api/Drones  
+- Route attribute: [Route("api/[controller]")]
+
+1) GET /api/Drones
+- Método: GET
+- Auth: [Authorize(Roles = "Admin")]
+- Descrição: lista todos os drones (inclui DroneFabri e Usuario)
+- Response: 200 OK array de drones
+
+2) GET /api/Drones/getDroneUser
+- Método: GET
+- Rota: /api/Drones/getDroneUser
+- Auth: [Authorize]
+- Descrição: retorna drones vinculados ao usuário autenticado (usa claim NameIdentifier do token)
+- Responses: 200 OK com lista de drones, 400 Bad Request se claim ausente
+
+3) GET /api/Drones/getByUserName/{userName}
+- Método: GET
+- Rota: /api/Drones/getByUserName/{userName}
+- Auth: [Authorize(Roles = "Admin")]
+- Descrição: retorna drones filtrados por userName (procura usuários por Nome e então busca drones)
+- Responses: 200 OK, 400 Bad Request se userName vazio, 404 se nenhum usuário/drones encontrados
+
+4) POST /api/Drones/vincular?mac={mac}
+- Método: POST
+- Rota: /api/Drones/vincular
+- Auth: [Authorize]
+- Query param: mac (string)
+- Body: objeto Drone (ex.: localizacao, tempoEmMili, status)
+- Descrição: vincula um DroneFabri existente (identificado por mac) ao usuário autenticado criando a entidade Drone; marca DroneFabri.Status = true
+- Responses: 200 OK com Drone criado, 404 se DroneFabri não encontrado, 400 se já vinculado ou usuário sem login
+
+5) PUT /api/Drones/tempo/{id}
+- Método: PUT
+- Rota: /api/Drones/tempo/{id}
+- Auth: (não há atributo explícito no método; apenas [HttpPut("tempo/{id}")])
+- Body: AtualizarTempoStatusDto { Tempo: long, Status: bool }
+- Descrição: atualiza TempoEmMili, tempoEmHoras e Status do drone
+- Responses: 200 OK com drone atualizado, 404 se drone não encontrado
+
+6) DELETE /api/Drones/{id}
+- Método: DELETE
+- Rota: /api/Drones/{id}
+- Auth: [Authorize]
+- Descrição: remove Drone por id e seta DroneFabri.Status = false
+- Responses: 204 No Content, 404 se não encontrado
+
+--------------------------------------------------------------------------------
+Outras observações do Program.cs
+- O projeto cria roles padrão no startup: Admin e User (ver Program.cs) se não existirem.
+- Swagger e SwaggerUI estão habilitados (app.UseSwagger(); app.UseSwaggerUI()).
+- MapControllers() é chamado, portanto rotas com atributos [Route] e padrões "api/[controller]" estão ativos.
+
+--------------------------------------------------------------------------------
+Exemplos rápidos (curl)
+- Registrar:
+curl -X POST "http://bluesentinal.somee.com/Usuario/registrar" -H "Content-Type: application/json" -d '{"email":"usuario@example.com","password":"Senha123!","confirmPassword":"Senha123!"}'
+
+- Login (exemplo genérico, rota pode variar):
+curl -X POST "http://bluesentinal.somee.com/Usuario/login" -H "Content-Type: application/json" -d '{"email":"usuario@example.com","password":"Senha123!"}'
+
+- List users (controller):
+curl "http://bluesentinal.somee.com/api/Usuarios"
+
+- Vincular drone (usuário autenticado):
+curl -X POST "http://bluesentinal.somee.com/api/Drones/vincular?mac=AA:BB:CC:DD:EE:FF" -H "Authorization: Bearer <token>" -H "Content-Type: application/json" -d '{"localizacao":"Gate A","tempoEmMili":0,"status":false}'
+
+--------------------------------------------------------------------------------
+Observações finais e recomendações
+- Para obter os schemas e respostas exatas (incluindo formatos retornados pelo MapIdentityApi em runtime), abra o Swagger no ambiente: http://bluesentinal.somee.com/swagger
+- Verifique se endpoints sensíveis (ex.: listar todos usuários) devem ser públicos. Atualmente GET /api/Usuarios não exige autorização no código; considere proteger com [Authorize(Roles = "Admin")] se necessário.
+- Padronize erros: algumas rotas retornam strings; recomenda-se usar um objeto de erro consistente: { "error": { "code": ..., "message":"...", "details": [...] } }.
+- Habilite HTTPS em produção e restrinja CORS em ambiente real.
+
+--------------------------------------------------------------------------------
